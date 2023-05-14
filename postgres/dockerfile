@@ -1,0 +1,2 @@
+FROM debezium/postgres:10-alpine
+COPY ./postgres-database-creation.sql /docker-entrypoint-initdb.d/
