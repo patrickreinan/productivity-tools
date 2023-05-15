@@ -1,2 +1,4 @@
-FROM debezium/postgres:10-alpine
-COPY ./postgres-database-creation.sql /docker-entrypoint-initdb.d/
+FROM postgres:alpine3.18
+COPY ${PWD}/postgres-bootstrap.sql /docker-entrypoint-initdb.d/
+COPY ${PWD}/postgresql.conf /usr/local/share/postgresql/postgresql.conf
+COPY ${PWD}/postgresql.conf /usr/local/share/postgresql/pg_hba.conf

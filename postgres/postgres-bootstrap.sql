@@ -1,3 +1,5 @@
+ALTER SYSTEM SET wal_level = logical;
+
 CREATE TABLE orders (
     id INT GENERATED ALWAYS AS IDENTITY,
     customer_id INT not null,
@@ -15,4 +17,4 @@ CREATE TABLE orders_items (
     CONSTRAINT fk_orders
     FOREIGN KEY (order_id)
     REFERENCES orders(id)
-)
+);
