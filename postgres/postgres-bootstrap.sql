@@ -18,3 +18,6 @@ CREATE TABLE orders_items (
     FOREIGN KEY (order_id)
     REFERENCES orders(id)
 );
+
+ALTER TABLE orders REPLICA IDENTITY FULL;
+ALTER TABLE orders_items REPLICA IDENTITY FULL;

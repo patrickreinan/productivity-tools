@@ -14,11 +14,6 @@ services:
       POSTGRES_PASSWORD: orders-pwd
     ports:
       - 5432:5432
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "orders"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     volumes:
       - ${PWD}/postgres/:/docker-entrypoint-initdb.d/;
   zookeeper:
@@ -37,9 +32,22 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-  kafka-connect:
+  registry:
+    image: confluentinc/cp-schema-registry:7.4.0
+    container_name: registry
+    depends_on:
+      - zookeeper
+    ports:
+      - 8085:8085
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "kafka:9092"
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: "zookeeper:2181"
+      SCHEMA_REGISTRY_HOST_NAME: registry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8085"
+ 
+  connect:
     container_name: kafka_connect
-    build: ${PWD}/kafka-connect
+    build: ${PWD}/connect
     ports:
     - 8083:8083
     environment:
@@ -47,10 +55,10 @@ services:
       CONNECT_REST_ADVERTISED_HOST_NAME: target-connect
       CONNECT_PRODUCER_COMPRESSION_TYPE: lz4
       CONNECT_GROUP_ID: connect
-      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://kafka-schema-registry:8081
-      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://kafka-schema-registry:8081
+      CONNECT_KEY_CONVERTER:  org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://registry:8085
+      CONNECT_VALUE_CONVERTER:  org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://registry:8085
       CONNECT_CONFIG_STORAGE_TOPIC: connect_config
       CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_OFFSET_STORAGE_TOPIC: connect_offset
@@ -66,6 +74,7 @@ services:
       - zookeeper
       - postgres
       - mongo
+      - registry
   
 
 networks:
