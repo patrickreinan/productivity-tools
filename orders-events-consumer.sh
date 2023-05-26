@@ -1,0 +1,1 @@
+docker run --rm --network devcon-network confluentinc/cp-kafka:7.4.0 /usr/bin/kafka-console-consumer --bootstrap-server kafka:9092 --topic orders.public.orders 

@@ -3,7 +3,8 @@ ALTER SYSTEM SET wal_level = logical;
 CREATE TABLE orders (
     id INT GENERATED ALWAYS AS IDENTITY,
     customer_id INT not null,
-    created_at timestamp default current_timestamp,
+    created_at timestamp default current_timestamp(6),
+    status INT not null default 1,
     PRIMARY KEY (id)
 );
 
