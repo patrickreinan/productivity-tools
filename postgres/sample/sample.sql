@@ -21,3 +21,7 @@ BEGIN;
 INSERT INTO orders(customer_id) VALUES (1);
 INSERT INTO orders_items(order_id, product_id, quantity, price) VALUES(lastval(), 1, 2,5.1);
 COMMIT;
+
+BEGIN;
+UPDATE orders SET status = 2 where customer_id = 1;
+COMMIT;

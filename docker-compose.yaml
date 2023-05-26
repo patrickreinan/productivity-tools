@@ -106,6 +106,10 @@ services:
     container_name: logstash
     environment:
       xpack.monitoring.enabled: "false"
+      ELASTIC_HOST: http://elastic:9200
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: orders.public.orders
+      HTTP_URL: https://eou6aw3b9tmtab9.m.pipedream.net
     depends_on:
     - kafka
     - zookeeper
