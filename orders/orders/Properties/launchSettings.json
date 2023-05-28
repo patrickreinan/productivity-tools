@@ -5,7 +5,8 @@
       "commandName": "Project",
       "applicationUrl": "http://localhost:5063",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ORDERS_CONNECTION_STRING": "Host=localhost:5432;Username=ordersuser;Password=orders-pwd;Database=orders"
       },
       "dotnetRunMessages": true
     }

@@ -73,7 +73,7 @@ class OrdersDataSource
 
     public OrdersDataSource()
     {
-        var connString = "Host=localhost:5432;Username=ordersuser;Password=orders-pwd;Database=orders";
+        var connString = Environment.GetEnvironmentVariable("ORDERS_CONNECTION_STRING");
 
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connString);
         datasource = dataSourceBuilder.Build();
