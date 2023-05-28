@@ -43,6 +43,12 @@ app.MapPost("/orders/{orderid}/status/{status}", async (OrderService service, in
 
 });
 
+app.MapGet("/orders/{id}/status", async (OrderService service, int id) =>
+{
+    var status = await service.GetOrderStatus(id);   
+    return new { orderId=id, status = new { id = status, name = status.ToString() } };
+});
+
 
 
 app.Run();
@@ -61,7 +67,7 @@ class Order
 
     public long Id { get; set; }
     public int CustomerId { get; set;  }
-    public OrderItem[] Items { get; set; }
+    public OrderItem[]? Items { get; set; }
 
 
 }
@@ -111,12 +117,9 @@ class OrderService
     }
 
 
-    public async Task UpdateStatus(long orderId, int status)
-    {
-        await  ordersRepository.UpdateStatus(orderId, status);
-    }
+    public async Task UpdateStatus(long orderId, int status) => await ordersRepository.UpdateStatus(orderId, status);
 
-    
+    public async Task<OrderStatus?> GetOrderStatus(int orderid) => await ordersRepository.GetStatus(orderid);
 }
 
 class OrderItemRepository : Repository
@@ -181,6 +184,18 @@ class OrdersRepository : Repository
 
     }
 
+    public async Task<OrderStatus?> GetStatus(int orderid)
+    {
+        await using (var cmd = new NpgsqlCommand("SELECT status FROM orders WHERE id = @id", base.Connection))
+        {
+            cmd.Parameters.AddWithValue("id", orderid);
+
+            var result = cmd.ExecuteScalar();
+
+            return result == null ? null : (OrderStatus)result;
+        }
+
+    }
 }
 
 
