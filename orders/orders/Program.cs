@@ -5,30 +5,39 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<OrdersDataSource>();
+builder.Services
+    .AddScoped<OrdersRepository>()
+    .AddScoped<OrderItemRepository>()
+    .AddScoped<OrderService>()
+    .AddScoped<NpgsqlConnection>((context) =>
+{
+    var connString = Environment.GetEnvironmentVariable("ORDERS_CONNECTION_STRING");
+
+    var dataSourceBuilder = new NpgsqlDataSourceBuilder(connString);
+   var dataSource = dataSourceBuilder.Build();
+    return dataSource.OpenConnection();
+});
 
 var app = builder.Build();
 
 
 
 
-app.MapPost("/orders",async (OrdersDataSource dataSource, Order order) =>
+app.MapPost("/orders",async (OrderService service, Order order) =>
 {
 
-    order.Id = await dataSource.CreateOrder(order);
+    await service.InsertOrder(order);
     return order;
 });
 
-app.MapPost("/orders/{orderid}/status/{status}", async (OrdersDataSource datasource, int orderid, string status) => {
+app.MapPost("/orders/{orderid}/status/{status}", async (OrderService service, int orderid, string status) => {
 
 
 
     var statusId = (int)Enum.Parse(typeof(OrderStatus), status.ToLower());
 
-    await datasource.UpdateStatus(orderid, statusId);
+    await service.UpdateStatus(orderid, statusId);
     
     return new { orderid, statusId };
 
@@ -45,6 +54,8 @@ public enum OrderStatus
     delivered = 3
 }
 
+
+
 class Order
 {
 
@@ -58,79 +69,115 @@ class Order
 class OrderItem
 {
    
-
     public double Total => Quantity * Price;
     public int ProductId { get; set; }
     public int Quantity { get; set; }
     public double Price { get; set;  }
 }
 
+abstract class Repository : IDisposable
+{
+    protected NpgsqlConnection Connection { get; }
 
-class OrdersDataSource
+    public Repository(NpgsqlConnection connection) => Connection = connection;
+
+    public void Dispose()
+    {
+        Connection.Close();
+    }
+}
+
+class OrderService
+{
+    private readonly OrdersRepository ordersRepository;
+    private readonly OrderItemRepository itemRepository;
+
+    public OrderService(OrdersRepository ordersRepository, OrderItemRepository itemRepository)
+    {
+        this.ordersRepository = ordersRepository;
+        this.itemRepository = itemRepository;
+    }
+
+    public async Task InsertOrder(Order order)
+    {
+
+        order.Id = await ordersRepository.Insert(order);
+
+
+        foreach (OrderItem item in order.Items)
+            await itemRepository.Insert(order.Id, item);
+
+
+    }
+
+
+    public async Task UpdateStatus(long orderId, int status)
+    {
+        await  ordersRepository.UpdateStatus(orderId, status);
+    }
+
+    
+}
+
+class OrderItemRepository : Repository
+{
+    public OrderItemRepository(NpgsqlConnection connection) : base(connection)
+    {
+    }
+
+    public async Task Insert(long orderId, OrderItem item)
+    {
+        await using (var cmd = new NpgsqlCommand("INSERT INTO orders_items(order_id, product_id, quantity, price) VALUES(@orderid, @productid,@quantity,@price);", base.Connection))
+        {
+            cmd.Parameters.AddWithValue("orderid", orderId);
+            cmd.Parameters.AddWithValue("productid", item.ProductId);
+            cmd.Parameters.AddWithValue("quantity", item.Quantity);
+            cmd.Parameters.AddWithValue("price", item.Price);
+            cmd.ExecuteNonQuery();
+
+        }
+
+    }
+}
+
+class OrdersRepository : Repository
 {
 
-    private readonly NpgsqlDataSource datasource;
-
-    public OrdersDataSource()
+    public OrdersRepository(NpgsqlConnection connection) : base(connection)
     {
-        var connString = Environment.GetEnvironmentVariable("ORDERS_CONNECTION_STRING");
-
-        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connString);
-        datasource = dataSourceBuilder.Build();
-
         
     }
 
-    public async Task<long> CreateOrder(Order order)
-    {
-        var conn = await datasource.OpenConnectionAsync();
-        long id;
+    
 
-        await using (var cmd = new NpgsqlCommand("INSERT INTO orders (customer_id) VALUES (@customerId); SELECT lastval();", conn))
+    public async Task<long> Insert(Order order)
+    {
+        
+        await using (var cmd = new NpgsqlCommand("INSERT INTO orders (customer_id) VALUES (@customerId); SELECT lastval();", base.Connection))
         {
             cmd.Parameters.AddWithValue("customerId", order.CustomerId);
-            
-            id=  (long)(cmd.ExecuteScalar());
+
+            var result = cmd.ExecuteScalar();
+
+            if (result == null)
+                throw new NullReferenceException("Null value has returned from database");
+            else
+                return (long)result;
 
         }
-
-
-        foreach(OrderItem item in order.Items)
-        {
-
-            await using (var cmd = new NpgsqlCommand("INSERT INTO orders_items(order_id, product_id, quantity, price) VALUES(@orderid, @productid,@quantity,@price);",conn))
-            {
-                cmd.Parameters.AddWithValue("orderid", id);
-                cmd.Parameters.AddWithValue("productid", item.ProductId);
-                cmd.Parameters.AddWithValue("quantity", item.Quantity);
-                cmd.Parameters.AddWithValue("price", item.Price);
-                cmd.ExecuteNonQuery();
-
-            }
-
-        }
-       
-
-        conn.Close();
-
-        return await Task.FromResult(id);
 
     }
 
-    public async Task UpdateStatus(int orderId, int status)
+    public async Task UpdateStatus(long orderId, int status)
     {
-        var conn = await datasource.OpenConnectionAsync();
-        
 
-        await using (var cmd = new NpgsqlCommand("UPDATE orders set status = @status where id = @id", conn))
+        await using (var cmd = new NpgsqlCommand("UPDATE orders set status = @status where id = @id", base.Connection))
         {
             cmd.Parameters.AddWithValue("status", status);
             cmd.Parameters.AddWithValue("id", orderId);
             cmd.ExecuteNonQuery();
 
         }
-
-        conn.Close();
 
     }
 
