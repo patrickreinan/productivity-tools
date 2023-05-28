@@ -1,10 +1,6 @@
 version: "3.9"
 services:
-  mongo:
-    container_name: mongo
-    image: mongo:6.0.5
-    ports:
-      - 27017:27017
+
   postgres: 
     container_name: postgres
     build: ${PWD}/postgres
@@ -74,7 +70,6 @@ services:
       - kafka
       - zookeeper
       - postgres
-      - mongo
       - registry
       - elastic
 
