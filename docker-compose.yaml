@@ -1,6 +1,17 @@
 version: "3.9"
 services:
 
+  orders:
+    image: devcon-orders
+    build:
+      context: ./orders
+      dockerfile: orders/Dockerfile
+    ports:
+      - 8080:80
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ORDERS_CONNECTION_STRING: "Host=postgres:5432;Username=ordersuser;Password=orders-pwd;Database=orders"
+
   postgres: 
     container_name: postgres
     build: ${PWD}/postgres

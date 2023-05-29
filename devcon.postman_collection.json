@@ -1,0 +1,302 @@
+{
+	"info": {
+		"_postman_id": "6209800b-4efa-4e7d-b198-999d5ef3b687",
+		"name": "devcon",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1749533"
+	},
+	"item": [
+		{
+			"name": "orders",
+			"item": [
+				{
+					"name": "post order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"response=pm.response.json();",
+									"var id = response.id;",
+									"pm.collectionVariables.set(\"orderid\", id);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerId\": 1,\n    \"items\": [\n\n        {\n            \"productId\": 1,\n            \"quantity\": 3,\n            \"price\": 4.5\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ordersurl}}/orders",
+							"host": [
+								"{{ordersurl}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update status to transit",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerId\": 1,\n    \"items\": [\n\n        {\n            \"productId\": 1,\n            \"quantity\": 3,\n            \"price\": 4.5\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ordersurl}}/orders/:orderid/status/:status",
+							"host": [
+								"{{ordersurl}}"
+							],
+							"path": [
+								"orders",
+								":orderid",
+								"status",
+								":status"
+							],
+							"variable": [
+								{
+									"key": "orderid",
+									"value": "{{orderid}}"
+								},
+								{
+									"key": "status",
+									"value": "transit"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update status to delivered",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerId\": 1,\n    \"items\": [\n\n        {\n            \"productId\": 1,\n            \"quantity\": 3,\n            \"price\": 4.5\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ordersurl}}/orders/:orderid/status/:status",
+							"host": [
+								"{{ordersurl}}"
+							],
+							"path": [
+								"orders",
+								":orderid",
+								"status",
+								":status"
+							],
+							"variable": [
+								{
+									"key": "orderid",
+									"value": "{{orderid}}"
+								},
+								{
+									"key": "status",
+									"value": "delivered"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get status",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerId\": 1,\n    \"items\": [\n\n        {\n            \"productId\": 1,\n            \"quantity\": 3,\n            \"price\": 4.5\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ordersurl}}/orders/:orderid/status",
+							"host": [
+								"{{ordersurl}}"
+							],
+							"path": [
+								"orders",
+								":orderid",
+								"status"
+							],
+							"variable": [
+								{
+									"key": "orderid",
+									"value": "{{orderid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "add postgres connector",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"orders-postgres-source\",\n  \"config\": {\n      \"connector.class\": \"io.debezium.connector.postgresql.PostgresConnector\",\n      \"tasks.max\": \"1\",\n      \"database.hostname\": \"postgres\",\n      \"database.port\": \"5432\",\n      \"database.user\": \"ordersuser\",\n      \"database.password\": \"orders-pwd\",\n      \"database.dbname\" : \"orders\",\n      \"topic.prefix\":\"orders\",\n      \"plugin.name\": \"pgoutput\",\n      \"column.exclude.list\": \"public.orders_items.total\",\n      \"time.precision.mode\":\"connect\"\n      \n      } \n }"
+				},
+				"url": {
+					"raw": "localhost:8083/connectors/",
+					"host": [
+						"localhost"
+					],
+					"port": "8083",
+					"path": [
+						"connectors",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "connectors",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"orders-connector\",\n  \"config\": {\n      \"connector.class\": \"io.debezium.connector.postgresql.PostgresConnector\",\n      \"tasks.max\": \"1\",\n      \"database.hostname\": \"postgres\",\n      \"database.port\": \"5432\",\n      \"database.user\": \"ordersuser\",\n      \"database.password\": \"orders-pwd\",\n      \"database.dbname\" : \"orders\",\n      \"topic.prefix\":\"orders\",\n      \"plugin.name\": \"pgoutput\"\n      \n      }\n }"
+				},
+				"url": {
+					"raw": "http://localhost:8083/connectors/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8083",
+					"path": [
+						"connectors",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "delete postgres connector source",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"orders-connector\",\n  \"config\": {\n      \"connector.class\": \"io.debezium.connector.postgresql.PostgresConnector\",\n      \"tasks.max\": \"1\",\n      \"database.hostname\": \"postgres\",\n      \"database.port\": \"5432\",\n      \"database.user\": \"ordersuser\",\n      \"database.password\": \"orders-pwd\",\n      \"database.dbname\" : \"orders\",\n      \"topic.prefix\":\"orders\",\n      \"plugin.name\": \"pgoutput\"\n      \n      }\n }"
+				},
+				"url": {
+					"raw": "http://localhost:8083/connectors/orders-postgres-source",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8083",
+					"path": [
+						"connectors",
+						"orders-postgres-source"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "orderid",
+			"value": "15"
+		},
+		{
+			"key": "ordersurl",
+			"value": "http://localhost:5063"
+		}
+	]
+}
