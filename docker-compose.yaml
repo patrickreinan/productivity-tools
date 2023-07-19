@@ -2,7 +2,7 @@ version: "3.9"
 services:
 
   orders:
-    image: devcon-orders
+    image: app-orders
     build:
       context: ./orders
       dockerfile: orders/Dockerfile
@@ -11,6 +11,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ORDERS_CONNECTION_STRING: "Host=postgres:5432;Username=ordersuser;Password=orders-pwd;Database=orders"
+
+  echo-server:
+    image: ealen/echo-server
+
 
   postgres: 
     container_name: postgres
@@ -29,6 +33,13 @@ services:
     image: confluentinc/cp-zookeeper:7.4.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+  kafka-consumer:
+    container_name: kafka-consumer
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    command: /usr/bin/kafka-console-consumer --bootstrap-server kafka:9092 --topic orders.public.orders 
+  
   kafka:
     container_name: kafka
     image: confluentinc/cp-kafka:7.4.0
@@ -106,6 +117,26 @@ services:
     depends_on:
       elastic:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  kibana-bootstrap:
+    container_name: kibana-bootstrap
+    depends_on:
+      kibana:
+        condition: service_healthy
+
+    image: curlimages/curl:8.1.2    
+    command: >- 
+      curl 
+      --location kibana:5601/api/data_views/data_view
+      --header 'kbn-xsrf: false' 
+      --header 'Content-Type: application/json' 
+      --data '{"data_view": {"title": "orders*","name": "Logs"}}'
 
   logstash:
     image: logstash:8.7.1
@@ -115,7 +146,7 @@ services:
       ELASTIC_HOST: http://elastic:9200
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC: orders.public.orders
-      HTTP_URL: https://eou6aw3b9tmtab9.m.pipedream.net
+      HTTP_URL: http://echo-server:80
     depends_on:
     - kafka
     - zookeeper
@@ -126,6 +157,6 @@ services:
 
 networks:
   default:
-    name: devcon-network
+    name: tools-network
 
      
